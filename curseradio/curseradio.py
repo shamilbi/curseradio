@@ -26,11 +26,11 @@ import pathlib
 import xdg.BaseDirectory
 import configparser
 import re
-
+import sys
 
 CONFIG_DEFAULT = {
     'opml': {'root': "http://opml.radiotime.com/"},
-    'playback': {'command': '/usr/bin/mpv'},
+    'playback': {'command': '/usr/local/bin/mpv'},
     'interface': {'keymap': 'default'},
     'keymap.default': {
         'up': 'KEY_UP',
@@ -42,7 +42,8 @@ CONFIG_DEFAULT = {
         'enter': 'KEY_ENTER',
         'stop': 'k',
         'exit': 'q',
-        'favourite': 'f'
+        'parent': 'h',
+        'favourite': 'f',
     }
 }
 
@@ -311,7 +312,8 @@ class OPMLBrowser:
         else:
             keysrc = self.config['keymap.default']
         for key in ('up', 'down', 'start', 'end', 'pageup', 'pagedown',
-                    'enter', 'stop', 'exit', 'favourite'):
+                    'enter', 'stop', 'exit', 'favourite',
+                    'parent'):
             value = keysrc.get(key, self.config['keymap.default'][key])
             if value.startswith('KEY_'):
                 keymap[key] = getattr(curses, value)
@@ -356,6 +358,16 @@ class OPMLBrowser:
                 target = 0
             elif to == "end":
                 target = len(self.flat) - 1
+            elif to == "parent":
+                target = self.top + self.cursor
+                showobjs = self.flat[0:target]
+                cdepth = self.flat[target][1]
+                for i, (obj, depth) in tuple(reversed(list(enumerate(showobjs)))):
+                    if target >= 0:
+                        target = target - 1
+                        if depth == cdepth - 1:
+                            break
+
         elif rel is not None:
             target = self.top + self.cursor + rel
 
@@ -392,6 +404,8 @@ class OPMLBrowser:
                 self.move(rel=-self.maxy)
             elif ch == self.keymap['pagedown']:  # page down
                 self.move(rel=self.maxy)
+            elif ch == self.keymap['parent']:
+                self.move(to="parent")
             elif ch == self.keymap['enter'] or ch == ord('\n'):
                 for msg in self.selected.activate():
                     if isinstance(msg, str):
