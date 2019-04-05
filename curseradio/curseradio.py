@@ -26,7 +26,6 @@ import pathlib
 import xdg.BaseDirectory
 import configparser
 import re
-import sys
 
 CONFIG_DEFAULT = {
     'opml': {'root': "http://opml.radiotime.com/"},
