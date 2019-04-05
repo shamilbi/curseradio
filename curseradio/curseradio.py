@@ -30,7 +30,7 @@ import re
 
 CONFIG_DEFAULT = {
     'opml': {'root': "http://opml.radiotime.com/"},
-    'playback': {'command': '/usr/local/bin/mpv'},
+    'playback': {'command': '/usr/bin/mpv'},
     'interface': {'keymap': 'default'},
     'keymap.default': {
         'up': 'KEY_UP',
