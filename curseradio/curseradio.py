@@ -27,6 +27,7 @@ import xdg.BaseDirectory
 import configparser
 import re
 
+
 CONFIG_DEFAULT = {
     'opml': {'root': "http://opml.radiotime.com/"},
     'playback': {'command': '/usr/local/bin/mpv'},
