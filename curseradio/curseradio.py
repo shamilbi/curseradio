@@ -312,8 +312,14 @@ class OPMLBrowser:
             keysrc = self.config[section]
         else:
             keysrc = self.config['keymap.default']
-        for key in CONFIG_DEFAULT['keymap.default']:
-            value = keysrc.get(key, self.config['keymap.default'][key])
+        default = CONFIG_DEFAULT['keymap.default']
+        current = self.config['keymap.default']
+        for key in default:
+            if key in current:
+                default_value = current[key]
+            else:
+                default_value = default[key]
+            value = keysrc.get(key, default_value)
             if value.startswith('KEY_'):
                 keymap[key] = getattr(curses, value)
             else:
