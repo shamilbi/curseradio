@@ -42,8 +42,9 @@ CONFIG_DEFAULT = {
         'enter': 'KEY_ENTER',
         'stop': 'k',
         'exit': 'q',
-        'parent': 'h',
         'favourite': 'f',
+        'left': 'KEY_LEFT',
+        'right': 'KEY_RIGHT',
     }
 }
 
@@ -311,9 +312,7 @@ class OPMLBrowser:
             keysrc = self.config[section]
         else:
             keysrc = self.config['keymap.default']
-        for key in ('up', 'down', 'start', 'end', 'pageup', 'pagedown',
-                    'enter', 'stop', 'exit', 'favourite',
-                    'parent'):
+        for key in CONFIG_DEFAULT['keymap.default']:
             value = keysrc.get(key, self.config['keymap.default'][key])
             if value.startswith('KEY_'):
                 keymap[key] = getattr(curses, value)
@@ -384,6 +383,26 @@ class OPMLBrowser:
         else:
             self.cursor = target - self.top
 
+    def stop_child(self):
+        if self.child is not None:
+            self.child.terminate()
+            self.child.wait()
+
+    def enter(self):
+        for msg in self.selected.activate():
+            if isinstance(msg, str):
+                self.display(msg=msg)
+            elif isinstance(msg, list):  # command to run
+                self.stop_child()
+
+                command = [self.config['playback']['command']] + msg
+                self.child = subprocess.Popen(command, stdout=subprocess.DEVNULL,
+                                              stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+                self.status = "Playing {}".format(self.selected.text)
+
+        self.flat = self.root.flatten([])
+        self.move(rel=0)
+
     def interact(self):
         """
         Main loop. Listen for keyboard input and respond.
@@ -404,34 +423,26 @@ class OPMLBrowser:
                 self.move(rel=-self.maxy)
             elif ch == self.keymap['pagedown']:  # page down
                 self.move(rel=self.maxy)
-            elif ch == self.keymap['parent']:
-                self.move(to="parent")
+            elif ch == self.keymap['left']:
+                if isinstance(self.selected, (OPMLFavourites, OPMLOutline)):
+                    if self.selected.collapsed:
+                        self.move(to="parent")
+                    else:
+                        self.enter()
+                else:
+                    self.move(to="parent")
+            elif ch == self.keymap['right']:
+                if isinstance(self.selected, (OPMLFavourites, OPMLOutline)) \
+                        and self.selected.collapsed:
+                    self.enter()
             elif ch == self.keymap['enter'] or ch == ord('\n'):
-                for msg in self.selected.activate():
-                    if isinstance(msg, str):
-                        self.display(msg=msg)
-                    elif isinstance(msg, list):  # command to run
-                        if self.child is not None:
-                            self.child.terminate()
-                            self.child.wait()
-
-                        command = [self.config['playback']['command']] + msg
-                        self.child = subprocess.Popen(command, stdout=subprocess.DEVNULL,
-                                                      stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-                        self.status = "Playing {}".format(self.selected.text)
-
-                self.flat = self.root.flatten([])
-                self.move(rel=0)
+                self.enter()
             elif ch == self.keymap['exit']:
-                if self.child is not None:
-                    self.child.terminate()
-                    self.child.wait()
+                self.stop_child()
                 self.save_favourites()
                 return
             elif ch == self.keymap['stop']:
-                if self.child is not None:
-                    self.child.terminate()
-                    self.child.wait()
+                self.stop_child()
             elif ch == self.keymap['favourite']:
                 self.favourites.toggle(self.selected)
                 self.flat = self.root.flatten([])
