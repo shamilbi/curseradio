@@ -80,7 +80,8 @@ class OPMLNode:
         text = element.get('text')
         attr = dict(element.attrib)
         type = attr.get('type', None)
-        if type is None and len(element) > 0:
+        if type is None and len(element) > 0 or type == 'text':
+            # text: No stations or shows available
             type = "outline"
 
         if type == "outline":
