@@ -1,5 +1,5 @@
-from .curseradio import OPMLBrowser
 import curses
+from curseradio.curseradio import OPMLBrowser
 
 def main():
     curses.wrapper(OPMLBrowser)

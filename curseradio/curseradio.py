@@ -18,14 +18,14 @@ Controls:
  * f - mark as favourite
 """
 
-import curses
+import pathlib
+import configparser
 import subprocess
+from abc import ABC, abstractmethod
+import curses
 import lxml.etree
 import requests
-import pathlib
 import xdg.BaseDirectory
-import configparser
-import re
 
 
 CONFIG_DEFAULT = {
@@ -49,7 +49,7 @@ CONFIG_DEFAULT = {
 }
 
 
-class OPMLNode:
+class OPMLNode(ABC):
     """
     Represents an OPML <outline> element. Only instantiate subclasses.
     """
@@ -60,7 +60,8 @@ class OPMLNode:
         children set to all the outlines contained in the file. (The header
         is currently discarded).
         """
-        if attr is None: attr = {}
+        if attr is None:
+            attr = {}
         tree = lxml.etree.parse(url)
         result = cls(text=text, attr=attr)
         result.children = [OPMLNode.from_element(o)
@@ -79,19 +80,19 @@ class OPMLNode:
         """
         text = element.get('text')
         attr = dict(element.attrib)
-        type = attr.get('type', None)
-        if type is None and len(element) > 0 or type == 'text':
+        type_ = attr.get('type', None)
+        if type_ is None and len(element) > 0 or type_ == 'text':
             # text: No stations or shows available
-            type = "outline"
+            type_ = "outline"
 
-        if type == "outline":
+        if type_ == "outline":
             node = OPMLOutline(text=text, attr=attr)
             for child in element.xpath('./outline'):
                 node.children.append(cls.from_element(child))
-        elif type == "link":
+        elif type_ == "link":
             node = OPMLOutlineLink(text=text, attr=attr)
             assert len(element) == 0
-        elif type == "audio":
+        elif type_ == "audio":
             node = OPMLAudio(text=text, attr=attr)
             assert len(element) == 0
         return node
@@ -99,8 +100,10 @@ class OPMLNode:
     def __init__(self, text, attr):
         self.text = text
         self.attr = attr
+        self.children = []
 
-    def render(self, depth):
+    @abstractmethod
+    def render(self):
         """
         Return a 4-tuple of text to display (text truncated if too long)
          * main title (~50% width)
@@ -108,14 +111,13 @@ class OPMLNode:
          * data0 (4 chars)
          * data1 (5 chars)
         """
-        raise NotImplemented
 
+    @abstractmethod
     def activate(self):
         """
         Action when the item is selected and enter pressed. Yield either
         strings (progress messages) or a list (command list for popen).
         """
-        raise NotImplemented
 
     def flatten(self, result, depth=0):
         """
@@ -149,8 +151,7 @@ class OPMLAudio(OPMLNode):
     attributes are considered.
     """
     def __init__(self, text, attr):
-        self.text = text
-        self.attr = attr
+        super().__init__(text, attr)
         self.url = attr['URL']
         self.bitrate = int(attr.get('bitrate', 0))
         self.reliability = int(attr.get('reliability', 0))
@@ -179,8 +180,7 @@ class OPMLOutline(OPMLNode):
     Simple branch-level element, filled from the host file at creation time.
     """
     def __init__(self, text, attr):
-        self.text = text
-        self.attr = attr
+        super().__init__(text, attr)
         self.children = []
         self.collapsed = True
         self.leaf = False
@@ -368,7 +368,7 @@ class OPMLBrowser:
                 target = self.top + self.cursor
                 showobjs = self.flat[0:target]
                 cdepth = self.flat[target][1]
-                for i, (obj, depth) in tuple(reversed(list(enumerate(showobjs)))):
+                for _, (_, depth) in tuple(reversed(list(enumerate(showobjs)))):
                     if target >= 0:
                         target = target - 1
                         if depth == cdepth - 1:
