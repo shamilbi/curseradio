@@ -1,0 +1,44 @@
+[project]
+name='curseradio'
+description='Curses interface for browsing and playing internet radio'
+license='MIT'
+readme = 'README.md'
+requires-python = '>=3.8'
+keywords = [
+    'internet',
+    'radio',
+]
+authors = [
+    {name = 'Gordon Ball', email = 'gordon@chronitis.net'},
+]
+dependencies = [
+    'lxml',
+    'requests',
+    'pyxdg',
+    'urllib3[socks]',
+]
+dynamic = ['version']
+
+[project.urls]
+Homepage = 'https://github.com/chronitis/curseradio'
+
+[project.scripts]
+curseradio = 'curseradio.__main__:main'
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[tool.hatch.version]
+path = 'curseradio/__init__.py'
+
+[tool.hatch.build]
+ignore-vcs = true
+#include = [
+#  'pkg/*.py',
+#  '/tests',
+#]
+exclude = [
+  '*.tmp',
+]
+
