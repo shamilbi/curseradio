@@ -172,7 +172,7 @@ class OPMLAudio(OPMLNode):
 
     def render(self):
         return (self.text, self.secondary,
-                "{}k".format(self.bitrate), '|'*(self.reliability//20))
+                f"{self.bitrate}k", '|'*(self.reliability//20))
 
 
 class OPMLOutline(OPMLNode):
@@ -197,8 +197,8 @@ class OPMLOutline(OPMLNode):
         return result
 
     def render(self):
-        return ("{} {}".format("+" if self.collapsed else "-", self.text),
-                "", "", "")
+        collapsed = "+" if self.collapsed else "-"
+        return (f"{collapsed} {self.text}", "", "", "")
 
     def to_element(self):
         elem = super().to_element()
@@ -219,7 +219,7 @@ class OPMLOutlineLink(OPMLOutline):
 
     def activate(self):
         if not self.ready:
-            yield "Loading {}".format(self.url)
+            yield f"Loading {self.url}"
             fakeroot = OPMLOutline.from_xml(self.url)
             self.children = fakeroot.children
             self.ready = True
@@ -308,7 +308,7 @@ class OPMLBrowser:
     def get_keymap(self):
         keymap = {}
         chosen = self.config['interface']['keymap']
-        section = 'keymap.{}'.format(chosen)
+        section = f'keymap.{chosen}'
         if self.config.has_section(section):
             keysrc = self.config[section]
         else:
@@ -405,7 +405,7 @@ class OPMLBrowser:
                 command = [self.config['playback']['command']] + msg
                 self.child = subprocess.Popen(command, stdout=subprocess.DEVNULL,
                                               stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-                self.status = "Playing {}".format(self.selected.text)
+                self.status = f"Playing {self.selected.text}"
 
         self.flat = self.root.flatten([])
         self.move(rel=0)
