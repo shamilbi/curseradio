@@ -29,7 +29,7 @@ import xdg.BaseDirectory
 
 
 CONFIG_DEFAULT = {
-    'opml': {'root': "http://opml.radiotime.com/"},
+    'opml': {'root': "https://opml.radiotime.com/"},
     'playback': {'command': '/usr/bin/mpv'},
     'interface': {'keymap': 'default'},
     'keymap.default': {
@@ -62,7 +62,11 @@ class OPMLNode(ABC):
         """
         if attr is None:
             attr = {}
-        tree = lxml.etree.parse(url)
+        if isinstance(url, pathlib.Path):
+            tree = lxml.etree.parse(url)
+        else:
+            r = requests.get(url)
+            tree = lxml.etree.XML(r.content)
         result = cls(text=text, attr=attr)
         result.children = [OPMLNode.from_element(o)
                            for o in tree.xpath('/opml/body/outline')]
@@ -80,6 +84,8 @@ class OPMLNode(ABC):
         """
         text = element.get('text')
         attr = dict(element.attrib)
+        if 'URL' in attr and (url := attr['URL']).startswith('http://'):
+            attr['URL'] = f'{url[:4]}s{url[4:]}'    # https://
         type_ = attr.get('type', None)
         if type_ is None and len(element) > 0 or type_ == 'text':
             # text: No stations or shows available
@@ -286,7 +292,8 @@ class OPMLBrowser:
         for path in xdg.BaseDirectory.load_data_paths("curseradio"):
             opmlpath = pathlib.Path(path, "favourites.opml")
             if opmlpath.exists():
-                return OPMLFavourites.from_xml(str(opmlpath))
+                #return OPMLFavourites.from_xml(str(opmlpath))
+                return OPMLFavourites.from_xml(opmlpath)
         return OPMLFavourites("", {})
 
     def save_favourites(self):
