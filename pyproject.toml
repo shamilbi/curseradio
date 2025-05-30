@@ -15,7 +15,6 @@ dependencies = [
     'lxml',
     'requests',
     'pyxdg',
-    'urllib3[socks]',
 ]
 dynamic = ['version']
 
